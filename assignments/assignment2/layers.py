@@ -92,13 +92,17 @@ class Param:
 
 class ReLULayer:
     def __init__(self):
-        pass
+        self.is_positive = True
 
     def forward(self, X):
         # TODO: Implement forward pass
         # Hint: you'll need to save some information about X
         # to use it later in the backward pass
-        raise Exception("Not implemented!")
+        output = np.maximum(0, X)
+        self.is_positive = output.astype(bool)
+        
+        return output
+        
 
     def backward(self, d_out):
         """
@@ -114,7 +118,8 @@ class ReLULayer:
         """
         # TODO: Implement backward pass
         # Your final implementation shouldn't have any loops
-        raise Exception("Not implemented!")
+        d_result = self.is_positive.astype(int) * d_out
+        
         return d_result
 
     def params(self):
