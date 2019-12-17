@@ -1,6 +1,40 @@
 import numpy as np
 
 
+def softmax(predictions):
+    '''
+    Computes probabilities from scores
+    Arguments:
+      predictions, np array, shape is either (N) or (batch_size, N) -
+        classifier output
+    Returns:
+      probs, np array of the same shape as predictions - 
+        probability for every class, 0..1
+    '''
+    # TODO implement softmax
+    # Your final implementation shouldn't have any loops
+    preds = (predictions.T - np.max(predictions, axis=1)).T
+    exps = np.exp(preds)
+    
+    return (exps.T / exps.sum(axis=1)).T
+
+
+def cross_entropy_loss(probs, target_index):
+    '''
+    Computes cross-entropy loss
+    Arguments:
+      probs, np array, shape is either (N) or (batch_size, N) -
+        probabilities for every class
+      target_index: np array of int, shape is (1) or (batch_size) -
+        index of the true class for given sample(s)
+    Returns:
+      loss: single value
+    '''
+    # TODO implement cross-entropy
+    # Your final implementation shouldn't have any loops
+    return - np.log(probs[np.arange(len(probs)), target_index]).mean()
+
+
 def l2_regularization(W, reg_strength):
     """
     Computes L2 regularization loss on weights and its gradient
@@ -14,7 +48,9 @@ def l2_regularization(W, reg_strength):
       gradient, np.array same shape as W - gradient of weight by l2 loss
     """
     # TODO: Copy from the previous assignment
-    raise Exception("Not implemented!")
+    loss = reg_strength * np.power(W, 2).sum()
+    grad = reg_strength * 2 * W
+    
     return loss, grad
 
 
@@ -34,9 +70,13 @@ def softmax_with_cross_entropy(preds, target_index):
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     """
     # TODO: Copy from the previous assignment
-    raise Exception("Not implemented!")
-
-    return loss, d_preds
+    probs = softmax(predictions)
+    loss = cross_entropy_loss(probs, target_index).mean()
+    dprediction = np.zeros_like(predictions)
+    dprediction[np.arange(predictions.shape[0]), target_index] = 1
+    dprediction = - (dprediction - softmax(predictions)) / dprediction.shape[0]
+    
+    return loss, dprediction
 
 
 class Param:
