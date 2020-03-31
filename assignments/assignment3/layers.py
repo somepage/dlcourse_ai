@@ -1,6 +1,40 @@
 import numpy as np
 
 
+def softmax(predictions):
+    '''
+    Computes probabilities from scores
+    Arguments:
+      predictions, np array, shape is either (N) or (batch_size, N) -
+        classifier output
+    Returns:
+      probs, np array of the same shape as predictions - 
+        probability for every class, 0..1
+    '''
+    # TODO implement softmax
+    # Your final implementation shouldn't have any loops
+    preds = (predictions.T - np.max(predictions, axis=1)).T
+    exps = np.exp(preds)
+    
+    return (exps.T / exps.sum(axis=1)).T
+
+
+def cross_entropy_loss(probs, target_index):
+    '''
+    Computes cross-entropy loss
+    Arguments:
+      probs, np array, shape is either (N) or (batch_size, N) -
+        probabilities for every class
+      target_index: np array of int, shape is (1) or (batch_size) -
+        index of the true class for given sample(s)
+    Returns:
+      loss: single value
+    '''
+    # TODO implement cross-entropy
+    # Your final implementation shouldn't have any loops
+    return - np.log(probs[np.arange(len(probs)), target_index]).mean()
+
+
 def l2_regularization(W, reg_strength):
     '''
     Computes L2 regularization loss on weights and its gradient
@@ -14,8 +48,9 @@ def l2_regularization(W, reg_strength):
       gradient, np.array same shape as W - gradient of weight by l2 loss
     '''
     # TODO: Copy from previous assignment
-    raise Exception("Not implemented!")
-
+    loss = reg_strength * np.power(W, 2).sum()
+    grad = reg_strength * 2 * W
+    
     return loss, grad
 
 
@@ -35,7 +70,12 @@ def softmax_with_cross_entropy(predictions, target_index):
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     '''
     # TODO copy from the previous assignment
-    raise Exception("Not implemented!")
+    probs = softmax(preds)
+    loss = cross_entropy_loss(probs, target_index).mean()
+    dprediction = np.zeros_like(preds)
+    dprediction[np.arange(preds.shape[0]), target_index] = 1
+    dprediction = - (dprediction - softmax(preds)) / dprediction.shape[0]
+    
     return loss, dprediction
 
 
@@ -51,18 +91,36 @@ class Param:
         
 class ReLULayer:
     def __init__(self):
-        pass
+        self.is_positive = True
 
     def forward(self, X):
-        # TODO copy from the previous assignment
-        raise Exception("Not implemented!")
+        # TODO: Implement forward pass
+        # Hint: you'll need to save some information about X
+        # to use it later in the backward pass
+        output = np.maximum(0, X)
+        self.is_positive = output.astype(bool)
+        
+        return output
+        
 
     def backward(self, d_out):
-        # TODO copy from the previous assignment
-        raise Exception("Not implemented!")
+        """
+        Backward pass
+        Arguments:
+        d_out, np array (batch_size, num_features) - gradient
+           of loss function with respect to output
+        Returns:
+        d_result: np array (batch_size, num_features) - gradient
+          with respect to input
+        """
+        # TODO: Implement backward pass
+        # Your final implementation shouldn't have any loops
+        d_result = self.is_positive.astype(int) * d_out
+        
         return d_result
 
     def params(self):
+        # ReLU Doesn't have any parameters
         return {}
 
 
@@ -73,17 +131,39 @@ class FullyConnectedLayer:
         self.X = None
 
     def forward(self, X):
-        # TODO copy from the previous assignment
-        raise Exception("Not implemented!")
+        # TODO: Implement forward pass
+        # Your final implementation shouldn't have any loops
+        self.X = X
+        
+        return self.X @ self.W.value + self.B.value
 
     def backward(self, d_out):
-        # TODO copy from the previous assignment
+        """
+        Backward pass
+        Computes gradient with respect to input and
+        accumulates gradients within self.W and self.B
+        Arguments:
+        d_out, np array (batch_size, n_output) - gradient
+           of loss function with respect to output
+        Returns:
+        d_result: np array (batch_size, n_input) - gradient
+          with respect to input
+        """
+        # TODO: Implement backward pass
+        # Compute both gradient with respect to input
+        # and gradients with respect to W and B
+        # Add gradients of W and B to their `grad` attribute
+
+        # It should be pretty similar to linear classifier from
+        # the previous assignment
+        self.W.grad += self.X.T @ d_out
+        self.B.grad += 2 * np.mean(d_out, axis=0)
+        d_input = d_out @ self.W.value.T
         
-        raise Exception("Not implemented!")        
         return d_input
 
     def params(self):
-        return { 'W': self.W, 'B': self.B }
+        return {'W': self.W, 'B': self.B}
 
     
 class ConvolutionalLayer:
