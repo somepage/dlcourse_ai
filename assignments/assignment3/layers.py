@@ -194,9 +194,19 @@ class ConvolutionalLayer:
 
     def forward(self, X):
         batch_size, height, width, channels = X.shape
+        
+        if self.padding:
+            self.X = np.zeros((batch_size,
+                               height + 2 * self.padding,
+                               width + 2 * self.padding,
+                               channels), dtype=X.dtype)
+            self.X[:, self.padding: -self.padding, self.padding: -self.padding, :] = X
+        else:
+            self.X = X
 
-        out_height = 0
-        out_width = 0
+        out_height = height - self.filter_size + 1
+        out_width = width - self.filter_size + 1
+        result = np.zeros((batch_size, self.out_channels))
         
         # TODO: Implement forward pass
         # Hint: setup variables that hold the result
@@ -206,9 +216,13 @@ class ConvolutionalLayer:
         # but try to avoid having any other loops
         for y in range(out_height):
             for x in range(out_width):
-                # TODO: Implement forward pass for specific location
-                pass
-        raise Exception("Not implemented!")
+                result += (X[:, x:x + self.filter_size, y:y + self.filter_size, :].reshape(
+                    batch_size, self.filter_size ** 2 * self.in_channels)
+                @ self.W.value.reshape(
+                    self.filter_size ** 2 * self.in_channels, self.out_channels)
+                           + self.B.value)
+                
+        return result.reshape(batch_size, 1, 1, self.out_channels)
 
 
     def backward(self, d_out):
@@ -217,7 +231,7 @@ class ConvolutionalLayer:
         # when you implemented FullyConnectedLayer
         # Just do it the same number of times and accumulate gradients
 
-        batch_size, height, width, channels = X.shape
+        batch_size, height, width, channels = self.X.shape
         _, out_height, out_width, out_channels = d_out.shape
 
         # TODO: Implement backward pass
@@ -226,14 +240,49 @@ class ConvolutionalLayer:
         # of the output
 
         # Try to avoid having any other loops here too
+        d_input = np.zeros(self.X.shape)
+        window = np.zeros(self.X.shape)
         for y in range(out_height):
             for x in range(out_width):
                 # TODO: Implement backward pass for specific location
                 # Aggregate gradients for both the input and
                 # the parameters (W and B)
-                pass
+    
+                
+                d_cube = d_out[:, y, x, :]
+                # X_cube is shape (batch_size, filter_size, filter_size, channels)
+                X_cube = self.X[:, y: y + self.filter_size, x: x + self.filter_size, :]
+                # X_cube is shape (batch_size, filter_size * filter_size * channels) => (batch_size, in_features)
+                #                                   0, 1, 2, 3
+                X_cube = np.transpose(X_cube, axes=[0, 3, 1, 2]).reshape((batch_size, self.filter_size ** 2 * channels))
+                # W_cube is shape (filter_size * filter_size * in_channels, out_shannel) => (in_features, out_features)
+                W_cube = np.transpose(self.W.value, axes=[2, 0, 1, 3])
+                W_cube = W_cube.reshape((self.filter_size ** 2 * self.in_channels, self.out_channels))
 
-        raise Exception("Not implemented!")
+                d_W_cube = (X_cube.transpose().dot(d_cube)).reshape(self.in_channels,
+                                                                    self.filter_size,
+                                                                    self.filter_size,
+                                                                    self.out_channels)
+
+                self.W.grad += np.transpose(d_W_cube, axes=[2, 1, 0, 3])
+                E = np.ones(shape=(1, batch_size))
+                self.B.grad += E.dot(d_cube).reshape((d_cube.shape[1]))
+
+                # d_cube : (batch_size, out_features) dot W_cube.transpose: (out_features, in_features)
+                # d_inp_xy is shape (batch_size, in_features)
+                d_inp_xy = d_cube.dot(W_cube.transpose())
+                d_inp_xy = d_inp_xy.reshape((batch_size, channels, self.filter_size, self.filter_size))
+                #                                       0, 1, 2, 3
+                d_inp_xy = np.transpose(d_inp_xy, axes=[0, 3, 2, 1])
+
+                d_inp[:, y: y + self.filter_size, x: x + self.filter_size, :] += d_inp_xy
+                window[:, y: y + self.filter_size, x: x + self.filter_size, :] += 1
+                
+        if self.padding:
+            d_inp = d_inp[:, self.padding: -self.padding, self.padding: -self.padding, :]
+                
+        return d_inp
+                
 
     def params(self):
         return { 'W': self.W, 'B': self.B }
