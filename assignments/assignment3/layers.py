@@ -275,13 +275,13 @@ class ConvolutionalLayer:
                 #                                       0, 1, 2, 3
                 d_inp_xy = np.transpose(d_inp_xy, axes=[0, 3, 2, 1])
 
-                d_inp[:, y: y + self.filter_size, x: x + self.filter_size, :] += d_inp_xy
+                d_input[:, y: y + self.filter_size, x: x + self.filter_size, :] += d_inp_xy
                 window[:, y: y + self.filter_size, x: x + self.filter_size, :] += 1
                 
         if self.padding:
-            d_inp = d_inp[:, self.padding: -self.padding, self.padding: -self.padding, :]
+            d_input = d_input[:, self.padding: -self.padding, self.padding: -self.padding, :]
                 
-        return d_inp
+        return d_input
                 
 
     def params(self):
