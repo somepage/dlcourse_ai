@@ -315,12 +315,37 @@ class MaxPoolingLayer:
         # TODO: Implement maxpool forward pass
         # Hint: Similarly to Conv layer, loop on
         # output x/y dimension
-        raise Exception("Not implemented!")
+        self.X = X
+        result = np.zeros((
+            batch_size,
+            (height - self.pool_size) // self.stride + 1,
+            (width - self.pool_size) // self.stride + 1,
+            channels))
+        for y in range(result.shape[1]):
+            for x in range(result.shape[2]):
+                result[:, y, x, :] = X[:, y: y + self.pool_size, x: x + self.pool_size, :].max(axis=1).max(axis=1)
+        
+        return result
 
     def backward(self, d_out):
         # TODO: Implement maxpool backward pass
         batch_size, height, width, channels = self.X.shape
-        raise Exception("Not implemented!")
+        
+        output = np.zeros(self.X.shape)
+        
+        for y_num, y in enumerate(range(0, height, self.stride)):
+            for x_num, x in enumerate(range(0, width, self.stride)):
+                d_cube = d_out[:, y_num, x_num, :]
+                d_cube = d_cube.reshape(batch_size, 1, 1, channels)
+                X_cube = self.X[:, y: y + self.pool_size, x: x + self.pool_size, :]
+                d_cube_out = (X_cube == X_cube.max(axis=1).max(axis=1).reshape(batch_size, 1, 1, channels)) * d_cube
+                # print(X_cube == X_cube.max(axis=1).max(axis=1).reshape(batch_size, 1, 1, channels))
+                # print(d_cube)
+                output[:, y: y + self.pool_size, x: x + self.pool_size, :] += d_cube_out.astype(np.float32)
+        return output
+        
+        
+        
 
     def params(self):
         return {}
