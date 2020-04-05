@@ -54,22 +54,20 @@ def l2_regularization(W, reg_strength):
     return loss, grad
 
 
-def softmax_with_cross_entropy(predictions, target_index):
-    '''
+def softmax_with_cross_entropy(preds, target_index):
+    """
     Computes softmax and cross-entropy loss for model predictions,
     including the gradient
-
     Arguments:
       predictions, np array, shape is either (N) or (batch_size, N) -
         classifier output
       target_index: np array of int, shape is (1) or (batch_size) -
         index of the true class for given sample(s)
-
     Returns:
       loss, single value - cross-entropy loss
       dprediction, np array same shape as predictions - gradient of predictions by loss value
-    '''
-    # TODO copy from the previous assignment
+    """
+    # TODO: Copy from the previous assignment
     probs = softmax(preds)
     loss = cross_entropy_loss(probs, target_index).mean()
     dprediction = np.zeros_like(preds)
@@ -318,20 +316,20 @@ class MaxPoolingLayer:
         self.X = X
         result = np.zeros((
             batch_size,
-            (height - self.pool_size) // self.stride + 1,
-            (width - self.pool_size) // self.stride + 1,
+            (height - self.pool_size) // self.stride + 3,
+            (width - self.pool_size) // self.stride + 3,
             channels))
         for y in range(result.shape[1]):
             for x in range(result.shape[2]):
                 result[:, y, x, :] = X[:, y: y + self.pool_size, x: x + self.pool_size, :].max(axis=1).max(axis=1)
-        
+                
         return result
 
     def backward(self, d_out):
         # TODO: Implement maxpool backward pass
         batch_size, height, width, channels = self.X.shape
         
-        output = np.zeros(self.X.shape)
+        output = np.zeros(self.X.shape, dtype=np.float32)
         
         for y_num, y in enumerate(range(0, height, self.stride)):
             for x_num, x in enumerate(range(0, width, self.stride)):
@@ -357,16 +355,20 @@ class Flattener:
 
     def forward(self, X):
         batch_size, height, width, channels = X.shape
-        self.X = X
+        self.X_shape = X.shape
 
         # TODO: Implement forward pass
         # Layer should return array with dimensions
         # [batch_size, hight*width*channels]
         return X.reshape((batch_size, height * width * channels))
+        #self.X_shape = X.shape
+
+        #return np.transpose(X, axes=[0, 3, 1, 2]).reshape((batch_size, height * width * channels))
 
     def backward(self, d_out):
         # TODO: Implement backward pass
-        return d_out.reshape(self.X.shape)
+        
+        return d_out.reshape(self.X_shape)
 
     def params(self):
         # No params!

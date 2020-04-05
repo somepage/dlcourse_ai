@@ -27,7 +27,16 @@ class ConvNet:
         conv2_channels, int - number of filters in the 2nd conv layer
         """
         # TODO Create necessary layers
-        raise Exception("Not implemented!")
+        self.layers = [ConvolutionalLayer(input_shape[2], conv1_channels, 4, 0),
+                       ReLULayer(),
+                       MaxPoolingLayer(2, 2),
+                       ConvolutionalLayer(conv1_channels, conv2_channels, 4, 0),
+                       ReLULayer(),
+                       MaxPoolingLayer(2, 2),
+                       Flattener(),
+                       FullyConnectedLayer(int(input_shape[0] * input_shape[1] * conv2_channels / 16), n_output_classes)]
+        
+        
 
     def compute_loss_and_gradients(self, X, y):
         """
@@ -44,17 +53,40 @@ class ConvNet:
         # TODO Compute loss and fill param gradients
         # Don't worry about implementing L2 regularization, we will not
         # need it in this assignment
-        raise Exception("Not implemented!")
+        val = X
+        
+        for i in range(len(self.layers)):
+            val = self.layers[i].forward(val)
+            for p in self.layers[i].params().keys():
+                self.layers[i].params()[p].grad = np.zeros_like(self.layers[i].params()[p].value)
+
+        # TODO Compute loss and fill param gradients
+        # by running forward and backward passes through the model
+        loss, grad = softmax_with_cross_entropy(val, y)
+        
+        for i in reversed(range(len(self.layers))):
+            grad = self.layers[i].backward(grad)
+                
+        return loss
 
     def predict(self, X):
         # You can probably copy the code from previous assignment
-        raise Exception("Not implemented!")
+        pred = np.zeros(X.shape[0], np.int)
+        output = X.copy()
+        
+        for i in range(len(self.layers)):
+            output = self.layers[i].forward(output)
+        
+        pred = output.argmax(axis=1)
+        return pred
 
     def params(self):
         result = {}
 
         # TODO: Aggregate all the params from all the layers
         # which have parameters
-        raise Exception("Not implemented!")
+        for i in range(len(self.layers)):
+            for p in self.layers[i].params().keys():
+                result[p +str(i)] =  self.layers[i].params()[p]
 
         return result
