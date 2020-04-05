@@ -286,11 +286,13 @@ class ConvolutionalLayer:
             d_inp = d_inp[:, self.padding: -self.padding, self.padding: -self.padding, :]
 
         return d_inp
-
-                
-
+    
     def params(self):
         return { 'W': self.W, 'B': self.B }
+
+    def reset_grad(self):
+        self.W.grad = np.zeros_like(self.W.value)
+        self.B.grad = np.zeros_like(self.B.value)
 
 
 class MaxPoolingLayer:
