@@ -3,7 +3,7 @@ import numpy as np
 from layers import (
     FullyConnectedLayer, ReLULayer,
     ConvolutionalLayer, MaxPoolingLayer, Flattener,
-    softmax_with_cross_entropy, l2_regularization
+    softmax_with_cross_entropy
     )
 
 
@@ -27,14 +27,14 @@ class ConvNet:
         conv2_channels, int - number of filters in the 2nd conv layer
         """
         # TODO Create necessary layers
-        self.layers = [ConvolutionalLayer(input_shape[2], conv1_channels, 4, 0),
+        self.layers = [ConvolutionalLayer(input_shape[2], conv1_channels, 3, 0),
                        ReLULayer(),
-                       MaxPoolingLayer(2, 2),
-                       ConvolutionalLayer(conv1_channels, conv2_channels, 4, 0),
+                       MaxPoolingLayer(4, 4),
+                       ConvolutionalLayer(conv1_channels, conv2_channels, 3, 0),
                        ReLULayer(),
-                       MaxPoolingLayer(2, 2),
+                       MaxPoolingLayer(4, 4),
                        Flattener(),
-                       FullyConnectedLayer(int(input_shape[0] * input_shape[1] * conv2_channels / 16), n_output_classes)]
+                       FullyConnectedLayer(int(input_shape[0] * input_shape[1] * conv2_channels / 256), n_output_classes)]
         
         
 

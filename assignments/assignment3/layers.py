@@ -38,11 +38,9 @@ def cross_entropy_loss(probs, target_index):
 def l2_regularization(W, reg_strength):
     '''
     Computes L2 regularization loss on weights and its gradient
-
     Arguments:
       W, np array - weights
       reg_strength - float value
-
     Returns:
       loss, single value - l2 regularization loss
       gradient, np.array same shape as W - gradient of weight by l2 loss
@@ -299,7 +297,6 @@ class MaxPoolingLayer:
     def __init__(self, pool_size, stride):
         '''
         Initializes the max pool
-
         Arguments:
         pool_size, int - area to pool
         stride, int - step size between pooling windows
@@ -314,22 +311,24 @@ class MaxPoolingLayer:
         # Hint: Similarly to Conv layer, loop on
         # output x/y dimension
         self.X = X
-        result = np.zeros((
-            batch_size,
-            (height - self.pool_size) // self.stride + 3,
-            (width - self.pool_size) // self.stride + 3,
-            channels))
-        for y in range(result.shape[1]):
-            for x in range(result.shape[2]):
-                result[:, y, x, :] = X[:, y: y + self.pool_size, x: x + self.pool_size, :].max(axis=1).max(axis=1)
-                
-        return result
+
+        output = []
+        for y in range(0, height, self.stride):
+            row = []
+            for x in range(0, width, self.stride):
+                X_cube = X[:, y: y + self.pool_size, x: x + self.pool_size, :]
+                row.append(X_cube.max(axis=1).max(axis=1).reshape(batch_size, 1, 1, channels))
+            row = np.dstack(row)
+            output.append(row)
+        output = np.hstack(output)
+
+        return output
 
     def backward(self, d_out):
         # TODO: Implement maxpool backward pass
         batch_size, height, width, channels = self.X.shape
         
-        output = np.zeros(self.X.shape, dtype=np.float32)
+        output = np.zeros(self.X.shape)
         
         for y_num, y in enumerate(range(0, height, self.stride)):
             for x_num, x in enumerate(range(0, width, self.stride)):
@@ -355,20 +354,17 @@ class Flattener:
 
     def forward(self, X):
         batch_size, height, width, channels = X.shape
-        self.X_shape = X.shape
+        self.X = X
 
         # TODO: Implement forward pass
         # Layer should return array with dimensions
         # [batch_size, hight*width*channels]
+        
         return X.reshape((batch_size, height * width * channels))
-        #self.X_shape = X.shape
-
-        #return np.transpose(X, axes=[0, 3, 1, 2]).reshape((batch_size, height * width * channels))
 
     def backward(self, d_out):
         # TODO: Implement backward pass
-        
-        return d_out.reshape(self.X_shape)
+        return d_out.reshape(self.X.shape)
 
     def params(self):
         # No params!
